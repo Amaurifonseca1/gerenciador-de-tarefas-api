@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { getApiErrorMessage } from "../lib/api";
 import { taskService } from "../services/taskService";
-import type { Task } from "../types/task";
+import type { Task, TaskListStats } from "../types/task";
 
 export interface UseTasksFilters {
   status: string;
+  priority: string;
+  overdue: string;
   q: string;
   sortBy: string;
   sortOrder: "asc" | "desc";
@@ -12,8 +14,12 @@ export interface UseTasksFilters {
   perPage: number;
 }
 
+const defaultStats: TaskListStats = { total: 0, completed: 0, pending: 0 };
+
 const defaultFilters: UseTasksFilters = {
   status: "",
+  priority: "",
+  overdue: "",
   q: "",
   sortBy: "updated_at",
   sortOrder: "desc",
@@ -28,6 +34,7 @@ export function useTasks(initialFilters?: Partial<UseTasksFilters>) {
     last_page: 1,
     per_page: 15,
     total: 0,
+    stats: defaultStats,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -43,6 +50,8 @@ export function useTasks(initialFilters?: Partial<UseTasksFilters>) {
     try {
       const response = await taskService.list({
         status: filters.status || undefined,
+        priority: filters.priority || undefined,
+        overdue: filters.overdue || undefined,
         q: filters.q || undefined,
         sort_by: filters.sortBy,
         sort_order: filters.sortOrder,
@@ -50,13 +59,25 @@ export function useTasks(initialFilters?: Partial<UseTasksFilters>) {
         per_page: filters.perPage,
       });
       setTasks(response.data);
-      setMeta(response.meta);
+      setMeta({
+        ...response.meta,
+        stats: response.meta.stats ?? defaultStats,
+      });
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [filters.status, filters.q, filters.sortBy, filters.sortOrder, filters.page, filters.perPage]);
+  }, [
+    filters.status,
+    filters.priority,
+    filters.overdue,
+    filters.q,
+    filters.sortBy,
+    filters.sortOrder,
+    filters.page,
+    filters.perPage,
+  ]);
 
   useEffect(() => {
     fetchTasks();
@@ -64,6 +85,14 @@ export function useTasks(initialFilters?: Partial<UseTasksFilters>) {
 
   const setFilterStatus = useCallback((status: string) => {
     setFilters((prev) => ({ ...prev, status, page: 1 }));
+  }, []);
+
+  const setFilterPriority = useCallback((priority: string) => {
+    setFilters((prev) => ({ ...prev, priority, page: 1 }));
+  }, []);
+
+  const setFilterOverdue = useCallback((overdue: string) => {
+    setFilters((prev) => ({ ...prev, overdue, page: 1 }));
   }, []);
 
   const setSearch = useCallback((q: string) => {
@@ -97,6 +126,8 @@ export function useTasks(initialFilters?: Partial<UseTasksFilters>) {
     error,
     filters,
     setFilterStatus,
+    setFilterPriority,
+    setFilterOverdue,
     setSearch,
     setSort,
     setPage,

@@ -1,19 +1,48 @@
 import axios, { AxiosError } from "axios";
+import { clearSession, loadSession } from "../auth/storage";
 
 const baseURL =
-  typeof import.meta.env.VITE_API_URL === "string" &&
-  import.meta.env.VITE_API_URL.length > 0
+  typeof import.meta.env.VITE_API_URL === "string" && import.meta.env.VITE_API_URL.length > 0
     ? import.meta.env.VITE_API_URL
-    : "http://127.0.0.1:8000/api";
+    : "http://127.0.0.1:3001/api";
 
 export const api = axios.create({
   baseURL,
   headers: { "Content-Type": "application/json", Accept: "application/json" },
 });
 
+let onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  onUnauthorized = handler;
+}
+
+api.interceptors.request.use((config) => {
+  const session = loadSession();
+  if (session?.token) {
+    config.headers.Authorization = `Bearer ${session.token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = (error as AxiosError).response?.status;
+    const url = String((error as AxiosError).config?.url ?? "");
+    const isAuthRoute = url.includes("/login") || url.includes("/register");
+    if (status === 401 && !isAuthRoute) {
+      clearSession();
+      onUnauthorized?.();
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface ApiErrorData {
   message?: string;
   errors?: Record<string, string[]>;
+  success?: boolean;
 }
 
 export function getApiErrorMessage(err: unknown): string {

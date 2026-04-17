@@ -1,9 +1,13 @@
 import { Select } from "../ui";
-import { STATUS_OPTIONS } from "../../types/task";
+import { OVERDUE_FILTER_OPTIONS, PRIORITY_OPTIONS, STATUS_OPTIONS } from "../../types/task";
 
 interface TaskFiltersProps {
   statusFilter: string;
+  priorityFilter: string;
+  overdueFilter: string;
   onStatusChange: (value: string) => void;
+  onPriorityChange: (value: string) => void;
+  onOverdueChange: (value: string) => void;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   sortBy: string;
@@ -16,11 +20,18 @@ const sortOptions = [
   { value: "created_at", label: "Data de criação" },
   { value: "title", label: "Título" },
   { value: "status", label: "Status" },
+  { value: "priority", label: "Prioridade" },
+  { value: "due_date", label: "Data limite" },
+  { value: "category", label: "Categoria" },
 ];
 
 export function TaskFilters({
   statusFilter,
+  priorityFilter,
+  overdueFilter,
   onStatusChange,
+  onPriorityChange,
+  onOverdueChange,
   searchQuery,
   onSearchChange,
   sortBy,
@@ -28,10 +39,11 @@ export function TaskFilters({
   onSortChange,
 }: TaskFiltersProps) {
   const allStatusOptions = [{ value: "", label: "Todos os status" }, ...STATUS_OPTIONS];
+  const allPriorityOptions = [{ value: "", label: "Todas as prioridades" }, ...PRIORITY_OPTIONS];
 
   return (
     <div className="task-filters" role="search">
-      <div className="task-filters__row">
+      <div className="task-filters__row task-filters__row--grow">
         <label htmlFor="filter-status" className="task-filters__label">
           Status
         </label>
@@ -44,18 +56,44 @@ export function TaskFilters({
           className="task-filters__select"
         />
       </div>
-      <div className="task-filters__row task-filters__search">
+      <div className="task-filters__row task-filters__row--grow">
+        <label htmlFor="filter-priority" className="task-filters__label">
+          Prioridade
+        </label>
+        <Select
+          id="filter-priority"
+          label=""
+          options={allPriorityOptions}
+          value={priorityFilter}
+          onChange={(e) => onPriorityChange(e.target.value)}
+          className="task-filters__select"
+        />
+      </div>
+      <div className="task-filters__row task-filters__row--grow">
+        <label htmlFor="filter-overdue" className="task-filters__label">
+          Prazo
+        </label>
+        <Select
+          id="filter-overdue"
+          label=""
+          options={OVERDUE_FILTER_OPTIONS}
+          value={overdueFilter}
+          onChange={(e) => onOverdueChange(e.target.value)}
+          className="task-filters__select"
+        />
+      </div>
+      <div className="task-filters__row task-filters__row--search">
         <label htmlFor="filter-search" className="task-filters__label">
-          Buscar
+          Buscar por título
         </label>
         <input
           id="filter-search"
           type="search"
-          placeholder="Título ou descrição..."
+          placeholder="Digite parte do título..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="form-field__input task-filters__input"
-          aria-label="Buscar tarefas por título ou descrição"
+          aria-label="Buscar tarefas por título"
         />
       </div>
       <div className="task-filters__row">
@@ -74,9 +112,7 @@ export function TaskFilters({
           <button
             type="button"
             className="task-filters__order"
-            onClick={() =>
-              onSortChange(sortBy, sortOrder === "asc" ? "desc" : "asc")
-            }
+            onClick={() => onSortChange(sortBy, sortOrder === "asc" ? "desc" : "asc")}
             aria-label={sortOrder === "asc" ? "Ordenar decrescente" : "Ordenar crescente"}
             title={sortOrder === "asc" ? "Descendente" : "Ascendente"}
           >

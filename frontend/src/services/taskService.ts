@@ -1,8 +1,10 @@
 import { api } from "../lib/api";
-import type { Task, TaskFormData, TasksResponse } from "../types/task";
+import type { Task, TaskFormData, TasksListApiEnvelope, TasksListResult } from "../types/task";
 
 export interface ListTasksParams {
   status?: string;
+  priority?: string;
+  overdue?: string;
   q?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";
@@ -11,23 +13,34 @@ export interface ListTasksParams {
 }
 
 export const taskService = {
-  async list(params: ListTasksParams = {}): Promise<TasksResponse> {
-    const { data } = await api.get<TasksResponse>("/tasks", { params });
-    return data;
+  async list(params: ListTasksParams = {}): Promise<TasksListResult> {
+    const { data: body } = await api.get<TasksListApiEnvelope>("/tasks", { params });
+    return {
+      data: body.data.items,
+      meta: body.data.meta,
+    };
   },
 
   async getById(id: number): Promise<Task> {
-    const { data } = await api.get<{ data: Task }>(`/tasks/${id}`);
+    const { data } = await api.get<{ success?: boolean; data: Task }>(`/tasks/${id}`);
     return data.data;
   },
 
   async create(payload: TaskFormData): Promise<Task> {
-    const { data } = await api.post<{ data: Task }>("/tasks", payload);
+    const requestBody = {
+      ...payload,
+      due_date: payload.due_date.trim() === "" ? null : payload.due_date.trim(),
+    };
+    const { data } = await api.post<{ success?: boolean; data: Task }>("/tasks", requestBody);
     return data.data;
   },
 
   async update(id: number, payload: TaskFormData): Promise<Task> {
-    const { data } = await api.put<{ data: Task }>(`/tasks/${id}`, payload);
+    const requestBody = {
+      ...payload,
+      due_date: payload.due_date.trim() === "" ? null : payload.due_date.trim(),
+    };
+    const { data } = await api.put<{ success?: boolean; data: Task }>(`/tasks/${id}`, requestBody);
     return data.data;
   },
 

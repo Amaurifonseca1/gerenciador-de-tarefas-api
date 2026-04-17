@@ -1,12 +1,15 @@
 import { useCallback, useState } from "react";
 import { getApiErrorMessage } from "../lib/api";
 import { taskService } from "../services/taskService";
-import type { Task, TaskFormData, TaskStatus } from "../types/task";
+import type { Task, TaskFormData, TaskPriority, TaskStatus } from "../types/task";
 
 const initialForm: TaskFormData = {
   title: "",
   description: "",
   status: "pendente",
+  priority: "media",
+  category: "",
+  due_date: "",
 };
 
 export function useTaskForm(onSuccess?: () => void) {
@@ -33,12 +36,27 @@ export function useTaskForm(onSuccess?: () => void) {
     setForm((prev) => ({ ...prev, status }));
   }, []);
 
+  const setPriority = useCallback((priority: TaskPriority) => {
+    setForm((prev) => ({ ...prev, priority }));
+  }, []);
+
+  const setCategory = useCallback((category: string) => {
+    setForm((prev) => ({ ...prev, category }));
+  }, []);
+
+  const setDueDate = useCallback((due_date: string) => {
+    setForm((prev) => ({ ...prev, due_date }));
+  }, []);
+
   const startEdit = useCallback((task: Task) => {
     setEditingId(task.id);
     setForm({
       title: task.title,
       description: task.description ?? "",
       status: task.status as TaskStatus,
+      priority: (task.priority ?? "media") as TaskPriority,
+      category: task.category ?? "",
+      due_date: task.due_date ?? "",
     });
     setSuccessMessage("");
     setErrorMessage("");
@@ -64,7 +82,14 @@ export function useTaskForm(onSuccess?: () => void) {
       setSuccessMessage("");
 
       try {
-        const payload: TaskFormData = { title, description: form.description.trim(), status: form.status };
+        const payload: TaskFormData = {
+          title,
+          description: form.description.trim(),
+          status: form.status,
+          priority: form.priority,
+          category: form.category.trim(),
+          due_date: form.due_date.trim(),
+        };
 
         if (editingId) {
           await taskService.update(editingId, payload);
@@ -93,6 +118,9 @@ export function useTaskForm(onSuccess?: () => void) {
     setTitle,
     setDescription,
     setStatus,
+    setPriority,
+    setCategory,
+    setDueDate,
     startEdit,
     cancelEdit,
     submit,
